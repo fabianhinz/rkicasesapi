@@ -31,6 +31,7 @@ export const fetchTodaysData = functions
             { headings: ["_", "_", "_", "state", "cases", "delta", "rate", "deaths", "mostAffected"] },
             async tablesAsJson => {
                 for (const rkiData of (tablesAsJson[0] as RkiData<string>[])) {
+                    if (rkiData.state === "Gesamt") continue
                     await firestore.collection('rkicases').doc().set({
                         ...rkiData,
                         timestamp,
@@ -47,15 +48,14 @@ export const fetchTodaysData = functions
 export const get = functions
     .region('europe-west1')
     .https.onRequest(async (req, res) => {
-        let query = firestore.collection("rkicases").orderBy("timestamp", "desc")
+        let query = firestore.collection("rkicases").orderBy("timestamp", "desc").limit(30)
 
         if (req.query.state) query = query.where("state", "==", req.query.state)
-        if (req.query.greaterThan) query = query.where("cases", ">", req.query.greaterThan)
 
         return query.get().then(documentData =>
             res.send(documentData.docs.map(doc => {
                 const { timestamp, ...rkiData } = doc.data() as RkiDataWithTimestamp
-                return { date: timestamp.toDate().toJSON(), timestamp, ...rkiData }
+                return { date: timestamp.toDate().toJSON(), ...rkiData }
             }))
         )
     }
