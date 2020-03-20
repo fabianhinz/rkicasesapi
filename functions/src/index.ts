@@ -48,7 +48,8 @@ export const fetchTodaysData = functions
 export const get = functions
     .region('europe-west1')
     .https.onRequest(async (req, res) => {
-        let query = firestore.collection("rkicases").orderBy("timestamp", "desc").limit(30)
+        // ? 16 states times 30 days
+        let query = firestore.collection("rkicases").orderBy("timestamp", "asc").limit(16 * 30)
 
         if (req.query.state) query = query.where("state", "==", req.query.state)
 
