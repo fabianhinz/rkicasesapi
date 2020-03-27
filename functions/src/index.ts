@@ -35,6 +35,7 @@ export const fetchTodaysData = functions
                     await firestore.collection('rkicases').doc().set({
                         ...rkiData,
                         timestamp,
+                        state: rkiData.state.replace(/\u00AD/g, ""),
                         cases: Number(rkiData.cases.replace(".", "")),
                         rate: Number(rkiData.rate.replace(",", ".")),
                         deaths: Number(rkiData.deaths)
