@@ -11,7 +11,7 @@ const firestore = admin.firestore()
 interface RkiData<T> {
     state: string
     cases: T
-    delta: string
+    delta: T
     rate: T
     deaths: T
     mostAffected: string
@@ -33,12 +33,14 @@ export const fetchTodaysData = functions
                 for (const rkiData of (tablesAsJson[0] as RkiData<string>[])) {
                     if (rkiData.state === "Gesamt") continue
                     await firestore.collection('rkicases').doc().set({
-                        ...rkiData,
                         timestamp,
-                        state: rkiData.state.replace(/\u00AD/g, ""),
+                        state: rkiData.state.replace(/\u00AD/g, "").replace("\n", ""),
                         cases: Number(rkiData.cases.replace(".", "")),
                         rate: Number(rkiData.rate.replace(",", ".")),
-                        deaths: Number(rkiData.deaths)
+                        deaths: Number(rkiData.deaths),
+                        delta: Number(
+                            rkiData.delta.replace('*', '').replace('+', '').replace('.', '')
+                        )
                     } as RkiDataWithTimestamp)
                 }
             }
