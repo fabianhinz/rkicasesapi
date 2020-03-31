@@ -28,7 +28,7 @@ export const fetchTodaysData = functions
 
         return tabletojson.convertUrl(
             'https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html',
-            { headings: ["_", "_", "_", "state", "cases", "delta", "rate", "deaths", "mostAffected"] },
+            { headings: ["_", "_", "state", "cases", "delta", "rate", "deaths"] },
             async tablesAsJson => {
                 for (const rkiData of (tablesAsJson[0] as RkiData<string>[])) {
                     if (rkiData.state === "Gesamt") continue
