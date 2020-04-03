@@ -21,7 +21,7 @@ type RkiDataWithTimestamp = RkiData<number> & { timestamp: FirebaseFirestore.Tim
 
 export const fetchTodaysData = functions
     .region('europe-west1')
-    .pubsub.schedule('every 24 hours')
+    .pubsub.schedule('0 12 * * *').timeZone("Europe/Berlin")
     .onRun(async () => {
         const tabletojson = (await import("tabletojson")).Tabletojson
         const timestamp = admin.firestore.Timestamp.now()
