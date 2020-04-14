@@ -48,6 +48,60 @@ export const fetchTodaysData = functions
 
     });
 
+interface Attributes {
+    Bundesland: string
+    Genesen: number
+    DiffVortag: number
+    Datenstand: string
+}
+
+interface Feature {
+    attributes: Attributes
+}
+
+interface RecoveredJson {
+    features: Feature[]
+}
+
+interface RecoveredDoc {
+    state: string
+    recovered: number
+    delta: number
+    esriTimestamp: string
+    timestamp: FirebaseFirestore.Timestamp
+}
+
+export const fetchTodaysRecovered = functions
+    .region('europe-west1')
+    .pubsub.schedule('0 12 * * *').timeZone("Europe/Berlin")
+    .onRun(async () => {
+        const fetch = (await import("node-fetch")).default
+        const response = await fetch("https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_COVID19_Recovered_BL/FeatureServer/0/query?f=json&where=Bundesland%20IS%20NOT%20NULL&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=Bundesland,Genesen,DiffVortag,Datenstand&cacheHint=true")
+        const json: RecoveredJson = await response.json()
+
+        const timestamp = admin.firestore.Timestamp.now()
+        const promises: Array<Promise<FirebaseFirestore.WriteResult>> = []
+
+        for (const { attributes } of json.features) {
+            if (attributes.Bundesland === "Alle Bundesländer") continue
+            promises.push(firestore.collection('rkirecovered').doc().set({
+                state: attributes.Bundesland,
+                recovered: attributes.Genesen,
+                delta: attributes.DiffVortag,
+                esriTimestamp: attributes.Datenstand,
+                timestamp
+            } as RecoveredDoc))
+        }
+
+        try {
+            console.log("esri response saved in collection")
+            return await Promise.all(promises)
+        } catch (e) {
+            console.log("error while saving docs to rkirecovered ", e)
+            return null
+        }
+    })
+
 export const get = functions
     .region('europe-west1')
     .https.onRequest(async (req, res) => {
