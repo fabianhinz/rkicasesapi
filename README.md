@@ -2,7 +2,7 @@
 
 # rkicasesapi
 
-- Cloud Function zur Sammlung von COVID-19: Fallzahlen in Deutschland
+- Cloud Function zur Sammlung und Bereitstellung von COVID-19: Fallzahlen in Deutschland
 - Jeden Tag um 12:00 (Europe/Berlin) werden Daten aus folgenden Quellen ausgelesen und persistiert: 
   - Fallzahlen vom [Robert Koch Institut](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html)
   - Genesene vom [esri](https://npgeo-corona-npgeo-de.hub.arcgis.com/search?groupIds=b28109b18022405bb965c602b13e1bbc)  
