@@ -36,8 +36,8 @@ export const fetchTodaysData = functions
                         timestamp,
                         state: rkiData.state.replace(/\u00AD/g, "").replace("\n", ""),
                         cases: Number(rkiData.cases.replace(".", "")),
-                        rate: Number(rkiData.rate.replace(",", ".")),
-                        deaths: Number(rkiData.deaths),
+                        rate: Number(rkiData.rate.replace(".", "").replace(",", ".")),
+                        deaths: Number(rkiData.deaths.replace(".", "")),
                         delta: Number(
                             rkiData.delta.replace('*', '').replace('+', '').replace('.', '')
                         )
