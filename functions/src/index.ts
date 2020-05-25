@@ -18,7 +18,7 @@ interface RkiData<T> {
 }
 
 type RkiDataWithTimestamp = RkiData<number> & { timestamp: FirebaseFirestore.Timestamp }
-
+// ? Todo >> switch to esri
 export const fetchTodaysData = functions
     .region('europe-west1')
     .pubsub.schedule('0 12 * * *').timeZone("Europe/Berlin")
@@ -34,10 +34,10 @@ export const fetchTodaysData = functions
                     if (rkiData.state === "Gesamt") continue
                     await firestore.collection('rkicases').doc().set({
                         timestamp,
-                        state: rkiData.state.replace(/\u00AD/g, "").replace("\n", ""),
+                        state: rkiData.state.replace(/\u00AD/g, "").replace("\n", "").replace('*', ''),
                         cases: Number(rkiData.cases.replace(".", "")),
-                        rate: Number(rkiData.rate.replace(",", ".")),
-                        deaths: Number(rkiData.deaths),
+                        rate: Number(rkiData.rate.replace(".", "").replace(",", ".")),
+                        deaths: Number(rkiData.deaths.replace(".", "")),
                         delta: Number(
                             rkiData.delta.replace('*', '').replace('+', '').replace('.', '')
                         )
