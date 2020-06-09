@@ -27,7 +27,7 @@ type RkiDataWithTimestamp = RkiData<number> & { timestamp: FirebaseFirestore.Tim
 // ? Todo >> switch to esri
 export const fetchTodaysData = functions
     .region('europe-west1')
-    .pubsub.schedule('0 6 * * *').timeZone("Europe/Berlin")
+    .pubsub.schedule('0 8 * * *').timeZone("Europe/Berlin")
     .onRun(async () => {
         const timestamp = admin.firestore.Timestamp.now()
 
@@ -79,7 +79,7 @@ interface RecoveredDoc {
 
 export const fetchTodaysRecovered = functions
     .region('europe-west1')
-    .pubsub.schedule('0 6 * * *').timeZone("Europe/Berlin")
+    .pubsub.schedule('0 8 * * *').timeZone("Europe/Berlin")
     .onRun(async () => {
         const fetch = (await import("node-fetch")).default
         const response = await fetch("https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_COVID19_Recovered_BL/FeatureServer/0/query?f=json&where=Bundesland%20IS%20NOT%20NULL&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=Bundesland,Genesen,DiffVortag,Datenstand&cacheHint=true")
