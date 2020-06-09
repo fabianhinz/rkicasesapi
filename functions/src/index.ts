@@ -14,38 +14,44 @@ interface RkiData<T> {
     delta: T
     rate: T
     deaths: T
-    mostAffected: string
+}
+
+interface EsriCasesAttributes {
+    LAN_ew_GEN: string
+    Fallzahl: number
+    faelle_100000_EW: number
+    Death: number
 }
 
 type RkiDataWithTimestamp = RkiData<number> & { timestamp: FirebaseFirestore.Timestamp }
 // ? Todo >> switch to esri
 export const fetchTodaysData = functions
     .region('europe-west1')
-    .pubsub.schedule('0 12 * * *').timeZone("Europe/Berlin")
+    .pubsub.schedule('0 6 * * *').timeZone("Europe/Berlin")
     .onRun(async () => {
-        const tabletojson = (await import("tabletojson")).Tabletojson
         const timestamp = admin.firestore.Timestamp.now()
 
-        return tabletojson.convertUrl(
-            'https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html',
-            { headings: ["_", "_", "state", "cases", "delta", "rate", "deaths"] },
-            async tablesAsJson => {
-                for (const rkiData of (tablesAsJson[0] as RkiData<string>[])) {
-                    if (rkiData.state === "Gesamt") continue
-                    await firestore.collection('rkicases').doc().set({
-                        timestamp,
-                        state: rkiData.state.replace(/\u00AD/g, "").replace("\n", "").replace('*', ''),
-                        cases: Number(rkiData.cases.replace(".", "")),
-                        rate: Number(rkiData.rate.replace(".", "").replace(",", ".")),
-                        deaths: Number(rkiData.deaths.replace(".", "")),
-                        delta: Number(
-                            rkiData.delta.replace('*', '').replace('+', '').replace('.', '')
-                        )
-                    } as RkiDataWithTimestamp)
-                }
-            }
-        )
+        const fetch = (await import("node-fetch")).default
+        const response = await fetch("https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Coronaf%C3%A4lle_in_den_Bundesl%C3%A4ndern/FeatureServer/0/query?where=1%3D1&outFields=LAN_ew_GEN,Fallzahl,faelle_100000_EW,Death&returnGeometry=false&outSR=4326&f=json")
+        const data: { features: { attributes: EsriCasesAttributes }[] } = await response.json()
 
+        for (const { attributes } of data.features) {
+            const dayBeforeDoc = (await firestore.collection('rkicases').where("state", "==", attributes.LAN_ew_GEN).orderBy("timestamp", "desc").limit(1).get()).docs[0]
+            const { cases: dayBeforeCases } = dayBeforeDoc.data() as RkiDataWithTimestamp
+
+            const docData: RkiDataWithTimestamp = {
+                state: attributes.LAN_ew_GEN,
+                cases: attributes.Fallzahl,
+                rate: attributes.faelle_100000_EW,
+                deaths: attributes.Death,
+                delta: attributes.Fallzahl - dayBeforeCases,
+                timestamp
+            }
+
+            await firestore.collection('rkicases').doc().set(docData)
+        }
+
+        return null
     });
 
 interface Attributes {
@@ -73,7 +79,7 @@ interface RecoveredDoc {
 
 export const fetchTodaysRecovered = functions
     .region('europe-west1')
-    .pubsub.schedule('0 12 * * *').timeZone("Europe/Berlin")
+    .pubsub.schedule('0 6 * * *').timeZone("Europe/Berlin")
     .onRun(async () => {
         const fetch = (await import("node-fetch")).default
         const response = await fetch("https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_COVID19_Recovered_BL/FeatureServer/0/query?f=json&where=Bundesland%20IS%20NOT%20NULL&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=Bundesland,Genesen,DiffVortag,Datenstand&cacheHint=true")
