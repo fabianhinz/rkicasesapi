@@ -110,11 +110,28 @@ export const fetchTodaysRecovered = functions
 
 export const get = functions
     .region('europe-west1')
-    .https.onRequest(async (req, res) => {
-        // ? 16 states times 30 days
-        let query = firestore.collection("rkicases").orderBy("timestamp", "asc").limit(16 * 30)
+    .https.onRequest(async (req, res): Promise<any> => {
+        if (req.path !== "/rkicases" && req.path !== "/rkirecovered") {
+            res.status(400)
+            res.send({ error: "path must match one of the following: '/rkicases', '/rkirecovered'" })
+            return
+        }
 
-        if (req.query.state) query = query.where("state", "==", req.query.state)
+        if (!req.query.state) {
+            res.status(400)
+            res.send({ error: "state param must match one of the following: 'Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hessen', 'Mecklenburg-Vorpommern', 'Niedersachsen', 'Nordrhein-Westfalen', 'Rheinland-Pfalz', 'Saarland', 'Sachsen', 'Sachsen-Anhalt', 'Schleswig-Holstein', 'Thüringen'" })
+            return
+        }
+
+        const startAt = req.query.startAtDate
+            ? admin.firestore.Timestamp.fromDate(new Date(req.query.startAtDate as string))
+            : admin.firestore.Timestamp.now()
+
+        const query = firestore.collection(req.path.slice(1))
+            .where("state", "==", req.query.state)
+            .orderBy("timestamp", "desc")
+            .startAt(startAt)
+            .limit(30)
 
         return query.get().then(documentData =>
             res.send(documentData.docs.map(doc => {
